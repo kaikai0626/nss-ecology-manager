@@ -1089,6 +1089,7 @@ function createActivity() {
       timeline: []
     };
     const data = getData();
+    if (!data.activities) data.activities = {};
     data.activities[act.id] = act;
     localStorage.setItem('ecology_data_nss_v1', JSON.stringify(data));
     try { _remoteSet('ecology_data_nss_v1', data); } catch(re) {}
