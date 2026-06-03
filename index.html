@@ -161,10 +161,11 @@ tr:hover td{background:#fafafa}
 /* Modal */
 .modal-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
 .modal-mask.show{display:flex}
-.modal{background:var(--white);border-radius:16px;padding:28px;width:90%;max-width:560px;max-height:85vh;overflow-y:auto;position:relative}
+.modal{background:var(--white);border-radius:16px;padding:28px;width:90%;max-width:560px;max-height:85vh;overflow-y:auto;position:relative;z-index:1001;pointer-events:auto}
+.modal *{pointer-events:auto}
 .modal-title{font-size:18px;font-weight:700;margin-bottom:20px}
 .modal-close{position:absolute;top:20px;right:20px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);line-height:1}
-.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);position:relative;z-index:10}
 
 /* Search bar */
 .search-bar{display:flex;gap:10px;margin-bottom:16px}
