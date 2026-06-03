@@ -808,7 +808,7 @@ function doLoginRole(role) {
   if (role === 'ops') {
     const pwd = document.getElementById('ops-pwd-input').value.trim();
     const errEl = document.getElementById('ops-login-err');
-    if (pwd !== 'nssgyyun2026') { errEl.textContent = '口令错误'; errEl.style.display='block'; return; }
+    if (pwd !== 'nshxhs2026') { errEl.textContent = '口令错误'; errEl.style.display='block'; return; }
     errEl.style.display = 'none';
     STATE.role = 'ops'; STATE.ip = null;
     enterPage('ops');
