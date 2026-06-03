@@ -773,7 +773,12 @@ function toast(msg, type='', duration=2800) {
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.modal-mask').forEach(m => {
-  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('show'); });
+  m.addEventListener('mousedown', e => { if(e.target === m) m.classList.remove('show'); });
+  m.addEventListener('click', e => { e.stopPropagation && e.stopPropagation(); });
+});
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', e => { e.stopPropagation(); });
+  modal.addEventListener('mousedown', e => { e.stopPropagation(); });
 });
 
 function showConfirm(title, body, onOk) {
@@ -1069,21 +1074,33 @@ function deleteActivity(actId) {
 function openCreateActivity() { openModal('modal-create-activity'); }
 
 function createActivity() {
-  const name = document.getElementById('new-act-name').value.trim();
-  const ip = document.getElementById('new-act-ip').value;
-  if (!name) { toast('请输入活动名称'); return; }
-  const act = {
-    id: genId(), ip, name, status: 'draft',
-    detail: { startTime:'', endTime:'', publishRules:'', contentDirection:'', rewards:'', tips:'', subActivities:[] },
-    whitelist: [], whitelistObjections: [], notes: [], winners: [], winnerObjections: [],
-    createdAt: now(), updatedAt: now(),
-    timeline: []
-  };
-  saveActivity(act);
-  closeModal('modal-create-activity');
-  document.getElementById('new-act-name').value = '';
-  renderOpsActivities();
-  toast('活动已创建');
+  try {
+    const nameEl = document.getElementById('new-act-name');
+    const ipEl = document.getElementById('new-act-ip');
+    if (!nameEl) { toast('找不到输入框，请刷新重试'); return; }
+    const name = nameEl.value.trim();
+    const ip = ipEl ? ipEl.value : 'nss';
+    if (!name) { toast('请输入活动名称'); return; }
+    const act = {
+      id: genId(), ip, name, status: 'draft',
+      detail: { startTime:'', endTime:'', publishRules:'', contentDirection:'', rewards:'', tips:'', subActivities:[] },
+      whitelist: [], whitelistObjections: [], notes: [], winners: [], winnerObjections: [],
+      createdAt: now(), updatedAt: now(),
+      timeline: []
+    };
+    const data = getData();
+    data.activities[act.id] = act;
+    localStorage.setItem('ecology_data_nss_v1', JSON.stringify(data));
+    try { _remoteSet('ecology_data_nss_v1', data); } catch(re) {}
+    closeModal('modal-create-activity');
+    nameEl.value = '';
+    renderOpsActivities();
+    if (typeof updateDataSummary === 'function') updateDataSummary();
+    toast('✅ 活动已创建');
+  } catch(e) {
+    toast('创建失败：' + e.message);
+    console.error('createActivity error:', e);
+  }
 }
 
 // ---- Activity Detail ----
