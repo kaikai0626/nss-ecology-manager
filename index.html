@@ -737,20 +737,68 @@ function getData() {
 }
 function saveData(data) {
   localStorage.setItem('ecology_data_nss_v1', JSON.stringify(data));
-  _remoteSet('ecology_data_nss_v1', data); // 立即同步
+  _remoteSet('ecology_data_nss_v1', data); // 立即同步（运营端全量写入）
+}
+
+// 安全写入单条活动：先从 D1 拉最新全量数据，仅替换目标活动，再写回
+// 防止多端并发时本地旧缓存覆盖其他端写入的数据
+async function saveActivitySafe(act) {
+  act.updatedAt = new Date().toISOString();
+  try {
+    // 1. 从 D1 拉最新全量数据
+    const remoteData = await _remoteGet('ecology_data_nss_v1');
+    // 2. 以远端为基础（保留所有其他活动），只替换当前活动
+    let base = remoteData || getData();
+    if (!base.activities) base.activities = {};
+    base.activities[act.id] = act;
+    // 3. 同步更新本地 localStorage
+    localStorage.setItem('ecology_data_nss_v1', JSON.stringify(base));
+    // 4. 写回 D1
+    await _remoteSet('ecology_data_nss_v1', base);
+  } catch(e) {
+    // 降级：本地兜底写入
+    const data = getData();
+    if (!data.activities) data.activities = {};
+    data.activities[act.id] = act;
+    localStorage.setItem('ecology_data_nss_v1', JSON.stringify(data));
+    try { _remoteSet('ecology_data_nss_v1', data); } catch(re) {}
+  }
 }
 function getActivities() { return getData().activities || {}; }
 function getActivity(id) { return getActivities()[id]; }
 function saveActivity(act) {
+  // 运营端：直接全量写入（运营是权威来源，不走 safe 路径）
+  if (STATE.role === 'ops') {
+    const data = getData();
+    act.updatedAt = new Date().toISOString();
+    if (!data.activities) data.activities = {};
+    data.activities[act.id] = act;
+    saveData(data);
+    if (typeof opsCurrentTab !== 'undefined' && opsCurrentTab === 'activities' && typeof renderOpsActivities === 'function') {
+      renderOpsActivities();
+      if (typeof updateDataSummary === 'function') updateDataSummary();
+    }
+    return;
+  }
+  // 非运营端（厂商、创作者）：走安全写入，先拉远端再合并单条
+  saveActivitySafe(act).then(() => {
+    if (STATE.role === 'vendor') {
+      if (typeof vendorCurrentTab !== 'undefined') {
+        const renderMap = { activities: renderVendorActivities, whitelist: renderVendorWhitelist, notes: renderVendorNotes, winners: renderVendorWinners, objections: renderVendorObjections };
+        if (renderMap[vendorCurrentTab]) renderMap[vendorCurrentTab]();
+      }
+    } else if (STATE.role === 'author') {
+      if (typeof authorCurrentTab !== 'undefined') {
+        if (authorCurrentTab === 'objection') renderAuthorObjection();
+      }
+    }
+  }).catch(e => console.error('saveActivitySafe error:', e));
+  // 乐观更新：本地立即刷新
   const data = getData();
   act.updatedAt = new Date().toISOString();
+  if (!data.activities) data.activities = {};
   data.activities[act.id] = act;
-  saveData(data);
-  // 实时更新运营端活动总控台列表（流程线）
-  if (typeof opsCurrentTab !== 'undefined' && opsCurrentTab === 'activities' && typeof renderOpsActivities === 'function') {
-    renderOpsActivities();
-    if (typeof updateDataSummary === 'function') updateDataSummary();
-  }
+  localStorage.setItem('ecology_data_nss_v1', JSON.stringify(data));
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function now() { return new Date().toISOString(); }
@@ -1091,8 +1139,7 @@ function createActivity() {
     const data = getData();
     if (!data.activities) data.activities = {};
     data.activities[act.id] = act;
-    localStorage.setItem('ecology_data_nss_v1', JSON.stringify(data));
-    try { _remoteSet('ecology_data_nss_v1', data); } catch(re) {}
+    saveData(data);
     closeModal('modal-create-activity');
     nameEl.value = '';
     renderOpsActivities();
