@@ -1333,7 +1333,7 @@ function renderDetailBody(act) {
               : `<span style="font-size:12px;color:#aaa;margin-left:8px">等待厂商提交</span>`}
         </div>`;
       })()}
-      ${winnersUnlocked ? `<a style="font-size:12px;color:var(--red);cursor:pointer" onclick="closeModal('modal-activity-detail');opsTab('winners')">获奖公示 ↗</a>` : ''}
+      ${['vendor_review','winners_published','completed'].includes(act.status) ? `<a style="font-size:12px;color:var(--red);cursor:pointer" onclick="closeModal('modal-activity-detail');opsTab('winners')">获奖公示 ↗</a>` : ''}
     </div>
   `;
 }
