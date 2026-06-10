@@ -1321,16 +1321,19 @@ function renderDetailBody(act) {
       ${(() => {
         const wp = act.winnersPublish || {};
         const wCount = wp.winnersCount || (wp.list && wp.list.length) || 0;
+        const winnersUnlocked = ['vendor_review','winners_published','completed'].includes(act.status);
         return `<div>
           <span style="font-weight:700">获奖公示</span>
-          ${wp.approvedAt
+          ${!winnersUnlocked
+            ? `<span style="font-size:12px;color:#aaa;margin-left:8px">等待厂商评审完成后解锁</span>`
+            : wp.approvedAt
             ? `<span style="font-size:12px;color:#389e0d;margin-left:8px">✅ 已发布${wCount ? '，<b style="color:var(--red)">'+wCount+'</b> 人' : ''}</span>`
             : wp.submittedAt
               ? `<span style="font-size:12px;color:#fa8c16;margin-left:8px">⏳ 待确认发布</span>`
               : `<span style="font-size:12px;color:#aaa;margin-left:8px">等待厂商提交</span>`}
         </div>`;
       })()}
-      <a style="font-size:12px;color:var(--red);cursor:pointer" onclick="closeModal('modal-activity-detail');opsTab('winners')">获奖公示 ↗</a>
+      ${winnersUnlocked ? `<a style="font-size:12px;color:var(--red);cursor:pointer" onclick="closeModal('modal-activity-detail');opsTab('winners')">获奖公示 ↗</a>` : ''}
     </div>
   `;
 }
