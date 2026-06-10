@@ -1436,6 +1436,10 @@ function syncActivityStatus(act) {
 function opsApproveWinners(actId) {
   const act = getActivity(actId);
   if (!act.winnersPublish || !act.winnersPublish.submittedAt) { toast('厂商尚未提交公示信息'); return; }
+  // 前置校验：必须已到厂商评审阶段
+  if (!['vendor_review','winners_published','completed'].includes(act.status)) {
+    toast('⚠️ 当前活动尚未到达「厂商评审」阶段，无法确认发布'); return;
+  }
   act.winnersPublish.approvedAt = now();
   if (!act.timeline) act.timeline = [];
   // Auto-pass vendor_reviewed if not yet done (vendor submitted winners = they reviewed)
@@ -3436,9 +3440,12 @@ function submitObjection() {
 function renderOpsWinners() {
   const el = document.getElementById('ops-winners-content');
   if (!el) return;
-  const acts = Object.values(getActivities()).sort((a,b) => new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  // 只展示已到「厂商评审完成」阶段及之后的活动
+  const acts = Object.values(getActivities())
+    .filter(a => ['vendor_review','winners_published','completed'].includes(a.status))
+    .sort((a,b) => new Date(b.createdAt||0)-new Date(a.createdAt||0));
   if (!acts.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><div>暂无活动</div></div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><div>暂无活动已进入获奖公示阶段<br><span style="font-size:13px;color:#aaa">需运营在「活动总控台」确认「厂商评审完成」后此处才会显示</span></div></div>';
     return;
   }
   el.innerHTML = acts.map(a => {
