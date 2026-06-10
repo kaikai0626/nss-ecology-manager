@@ -2729,7 +2729,8 @@ function filterVendorNotes(q) {
 }
 
 function renderVendorWinners() {
-  const acts = getVendorActivities().filter(a => ['active','collecting','vendor_review','winners_published','completed'].includes(a.status)).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  // 只有「厂商评审完成」及之后的阶段才能提交获奖公示
+  const acts = getVendorActivities().filter(a => ['vendor_review','winners_published','completed'].includes(a.status)).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   const el = document.getElementById('vendor-winners-content');
   if (!acts.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><div>暂无可操作的活动</div></div>';
@@ -2865,9 +2866,17 @@ function parseWinnersListFile(input) {
 
 let editingWinnersActId = null;
 function openUploadWinners(actId, role) {
+  const act = getActivity(actId);
+  // 厂商端前置校验：必须到达「厂商评审」阶段才能提交获奖公示
+  if (role === 'vendor') {
+    const allowedStatuses = ['vendor_review','winners_published','completed'];
+    if (!allowedStatuses.includes(act.status)) {
+      toast('⚠️ 当前活动尚未到达「厂商评审」阶段，无法提交获奖公示'); 
+      return;
+    }
+  }
   editingWinnersActId = actId;
   _winnersList = null;
-  const act = getActivity(actId);
   const wp = act.winnersPublish || {};
   document.getElementById('winners-deadline').value = wp.deadline || '';
   document.getElementById('winners-count').value = wp.winnersCount || '';
